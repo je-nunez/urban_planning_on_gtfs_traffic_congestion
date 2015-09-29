@@ -16,9 +16,9 @@ the above authors, who should not be contacted for this work.
 This inspiration is to unite this work on Urban Development with routinary, detailed
 data on Traffic Congestion like can be obtained from minute, daily `General Transit Feed
 Specification` data sets, etc., which give very detailed information on some aspects on
-Urban Transit, although **NOT** all the aspect these researchers analyze and encourage,
-which is sometimes not available yet in the routinary, exact format that `GTFS`
-data-sets offer.
+Urban Transit, although **NOT** all the aspects these researchers analyze and encourage,
+which are sometimes not available yet in the routinary, daily, quite exact format that
+`GTFS` data-sets offer.
 
 # WIP
 
