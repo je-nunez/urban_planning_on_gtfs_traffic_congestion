@@ -10,13 +10,13 @@ coverage is quite ample and profound, among other things, on the 5 different
 `Dimensions` of Transit, `Density`, `Diversity`, `Design`, `Destination Access`, and
 `Distance to Transit`.
 
-This specific work is *NOT* supported or related, either directly or indirectly, by
+This specific work is **NOT** supported or related, either directly or indirectly, by
 the above authors, who should not be contacted for this work.
 
 This inspiration is to unite this work on Urban Development with routinary, detailed
 data on Traffic Congestion like can be obtained from minute, daily `General Transit Feed
-Specification` data sets, etc., which give very detailed information on some aspects
-on Urban Transit, although *NOT* all the aspect these researchers analyze and encourage,
+Specification` data sets, etc., which give very detailed information on some aspects on
+Urban Transit, although **NOT** all the aspect these researchers analyze and encourage,
 which is sometimes not available yet in the routinary, exact format that `GTFS`
 data-sets offer.
 
