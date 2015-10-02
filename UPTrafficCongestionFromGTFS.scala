@@ -6,6 +6,7 @@ import _root_.java.util.Calendar
 import scala.collection.JavaConversions._
 
 import scala.collection.immutable.Map
+import scala.util.{Failure, Success, Try}
 
 /* Internal packages of this project. In this very first version, they
  * have this simple prefix, but will surely change. */
@@ -14,6 +15,8 @@ import src.main.scala.logging.Logging._
 import src.main.scala.config.Config
 import src.main.scala.controller._
 import src.main.scala.db.DbGtfs
+import src.main.scala.types.PostalCode
+import src.main.scala.geodecoding.GeoDecodingProviderNominatim
 
 /*
  *   MAIN PROGRAM
@@ -70,6 +73,14 @@ object urbanPlanningOnTrafficCongestion {
       dstOutputDirect = cmdLineOptions("result-dir")
 
     val ignoreAgencyValidation = cmdLineOptions.contains("ignore-agencies")
+
+    // test geo-decoding a latitude-longitude to get its postal code
+
+    GeoDecodingProviderNominatim.convertLatLongToPostalCode(40.750556, -73.993611) match {
+      case Success(postalCode) => println(postalCode.countryCode + " " +
+                                          postalCode.postalCode)
+      case Failure(ex) => println(s"An exception occurred: ${ex.getMessage}")
+    }
 
     val gtfsDb = new DbGtfs(dstOutputDirect)
 
