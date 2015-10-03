@@ -1,0 +1,14 @@
+
+According to the number of coordinates given
+by GTFS, and the requirement of free of API-keys
+services, there are other GeoDecoders available,
+like ESRI ArcGIS Rest services API (token-less):
+
+  https://developers.arcgis.com/rest/geocode/api-reference/geocoding-reverse-geocode.htm
+
+Their implementation is very similar to the
+one present here, since they may be able to
+return JSON answers. All depends on the number
+of coordinates given by GTFS, which is what
+drives these requests.
+
