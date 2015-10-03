@@ -17,6 +17,7 @@ import src.main.scala.controller._
 import src.main.scala.db.DbGtfs
 import src.main.scala.types.PostalCode
 import src.main.scala.geodecoding.GeoDecodingProviderNominatim
+import src.main.scala.geodecoding.GeoDecodingProviderGoogleMaps
 
 /*
  *   MAIN PROGRAM
@@ -76,7 +77,13 @@ object urbanPlanningOnTrafficCongestion {
 
     // test geo-decoding a latitude-longitude to get its postal code
 
-    GeoDecodingProviderNominatim.convertLatLongToPostalCode(40.750556, -73.993611) match {
+    GeoDecodingProviderNominatim(40.750556, -73.993611) match {
+      case Success(postalCode) => println(postalCode.countryCode + " " +
+                                          postalCode.postalCode)
+      case Failure(ex) => println(s"An exception occurred: ${ex.getMessage}")
+    }
+
+    GeoDecodingProviderGoogleMaps(40.750556, -73.993611) match {
       case Success(postalCode) => println(postalCode.countryCode + " " +
                                           postalCode.postalCode)
       case Failure(ex) => println(s"An exception occurred: ${ex.getMessage}")

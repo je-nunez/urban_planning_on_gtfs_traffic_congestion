@@ -1,7 +1,7 @@
 package src.main.scala.geodecoding
 
 import scala.util.{Failure, Success, Try}
-import scala.io.Source
+
 import scala.util.control.NonFatal
 
 import net.liftweb.json._
@@ -20,28 +20,10 @@ import src.main.scala.types.PostalCode
 
 object GeoDecodingProviderNominatim extends GeoDecodingProvider {
 
-  private val urlGeoDecodeFmt =
+  override protected [this] val urlGeoDecodeFmt =
     "http://nominatim.openstreetmap.org/reverse?lat=%f&lon=%f&format=json&accept-language=en&addressdetails=1"
 
-  def convertLatLongToPostalCode(Latitude: Double, Longitude: Double):
-    Try[PostalCode] = {
-
-      val urlGeoDecode = urlGeoDecodeFmt.format(Latitude, Longitude)
-      try {
-        val src = Source.fromURL(urlGeoDecode)
-        val jsonResult = src.mkString
-        parsePostalCodeInAnswer(jsonResult)
-      } catch {
-        case e: java.io.IOException => {
-                     logMsg(ERROR, "I/O error occurred while GeoDecoding: %s".
-                                     format(e.getMessage))
-                     Failure(e)
-          }
-      }
-
-  }
-
-  def parsePostalCodeInAnswer(answerJson: String): Try[PostalCode] = {
+  override protected [this] def parsePostalCodeInAnswer(answerJson: String): Try[PostalCode] = {
 
     try {
       val jsonTree = parse(answerJson)
@@ -73,7 +55,7 @@ object GeoDecodingProviderNominatim extends GeoDecodingProvider {
        "osm_id":"138141251",
        "lat":"40.7505247",
        "lon":"-73.9935501780078",
-       "display_name":"Madison Square Garden, 46, West 31st Street, Koreatown, New York County, New York City, New York, 10001, United States of America",
+       "display_name":"Madison Square Garden, 46, West 31st Street, ... New York City, New York, 10001, United States of America",
        "address":{
                    "stadium":"Madison Square Garden",
                    "house_number":"46",

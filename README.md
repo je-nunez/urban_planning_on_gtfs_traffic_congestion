@@ -25,3 +25,12 @@ which are sometimes not available yet in the routinary, daily, quite exact forma
 This project is a *work in progress*. The implementation is *incomplete* and
 subject to change. The documentation can be inaccurate.
 
+# Required Libraries:
+
+     Lift JSon
+     ParaNamer Core
+     Reactive Streams
+     Xerial Sqlite JDBC
+     Scala Slick
+     SLF4J
+
