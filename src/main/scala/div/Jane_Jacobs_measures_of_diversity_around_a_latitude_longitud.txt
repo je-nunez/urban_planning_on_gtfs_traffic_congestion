@@ -1,0 +1,39 @@
+
+This package contains classes which try to estimate Jane Jacobs' measures of
+diversity and mixture around a (latitude,longitude) of a point in the city
+where vehicular traffic passes. For example, to estimate Jane Jacobs'
+measures of diversity and mixture around intersections of avenues or streets,
+or bus stops, etc.
+
+Ie., their purpose is to measure what Jane Jacobs wrote in her book 'The
+Death and Life of Great American Cities' on Urban Planning, in chapter 7,
+'The Generators of Diversity':
+
+    To understand cities, we have to deal outright with combinations
+    or mixtures of uses, not separate uses, as the essential phenomena
+    ... A mixture of uses, if it is to be sufficiently complex to
+    sustain city safety, public contact and cross-use, needs an
+    enormous diversity of ingredients. So the first question -and by
+    far the most important question- about planning cities is this:
+    How can cities generate enough mixture among uses -enough diversity-
+    throughout enough of their territories, to sustain their own
+    civilization? It is all very well to castigate the Great Blight of
+    Dullness and to understand why it is destructive to city life, but
+    in itself this does not get us far... Consider the problem posed
+    by the street with the pretty sidewalk park in Baktimore, which I
+    mentioned back in Chapter Three. My friend from the street, Mrs.
+    Kostriksky, is quite right when she reasons that it needs some
+    commerce for its users' convenience. And as might be expected,
+    inconvenience and lack of public street life are only two of the
+    by-roducts of residential monotony here. Danger is another -fear
+    of the streets after dark. Some people fear to be alone in their
+    houses by day since the occurrence of two nasty daytime assaults.
+    Moreover, the place lacks commercial choices as well as any
+    cultural interest. We can see very well how fatal is its monotony.
+    But having said this, then what? The missing diversity,
+    convenience, interest and vitality do not spring forth because the
+    area needs their benefits. Anybody who started a retail enterprise
+    here, for example, would be stupid. He could not make a living. To
+    wish a vital urban life might somehow spring up here is to play
+    with daydreams. The place is an economic desert.
+
