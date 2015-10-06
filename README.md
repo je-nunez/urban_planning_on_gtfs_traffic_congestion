@@ -32,5 +32,6 @@ subject to change. The documentation can be inaccurate.
      Reactive Streams
      Xerial Sqlite JDBC
      Scala Slick
+     EhCache 2
      SLF4J
 
