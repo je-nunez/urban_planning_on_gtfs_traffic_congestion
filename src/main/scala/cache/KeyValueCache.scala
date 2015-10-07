@@ -36,7 +36,7 @@ class KeyValueCache[K, V](val cacheName: String,
 
     val newUniqueCacheName = uniqueCacheName.toString
     if (!cacheName.equals(newUniqueCacheName)) {
-      logMsg(WARNING, s"Cache '%s' already exists: renaming it as '%s'".
+      logMsg(WARNING, "Cache '%s' already exists: renaming it as '%s'".
                       format(cacheName, newUniqueCacheName))
     }
 
