@@ -12,34 +12,36 @@ import src.main.scala.logging.Logging._
 // A free version modification, from
 // https://vinaycn.wordpress.com/2013/10/22/ehcache-as-a-scala-map/
 
-class StringCache {
+class KeyValueCache[K, V](val cacheName: String,
+                          val maxElementsInMemory: Int = 50000,
+                          val eternal: Boolean = false,
+                          val timeToIdle: Int = 0,
+                          val timeToLive: Int = 0) {
 
   protected [this] val cacheArea = createEhCache
 
   def createEhCache = {
     //build the ehCacheManager
     val managerName = "cacheManager"
-    val name = "ehCache"
-    val maxElementsInMemory: Int = 50000
-    val eternal = false
-    val timeToIdle = 0
-    val timeToLive = 0
 
     val managerConfiguration = new Configuration()
     val cacheManager = new CacheManager(managerConfiguration)
 
     //build the cache
-    var cacheName = name
-    while (cacheManager.cacheExists(cacheName)) {
-      // cache already exists.
-      cacheName += "_"
+    val uniqueCacheName = new StringBuilder(cacheName)
+    while (cacheManager.cacheExists(uniqueCacheName.toString)) {
+      // cache name already exists.
+      uniqueCacheName.append("_")
     }
-    if (!name.equals(cacheName)) {
-      logMsg(WARNING, s"Cache '$name' already exists: creating a new one with name '$cacheName'")
+
+    val newUniqueCacheName = uniqueCacheName.toString
+    if (!cacheName.equals(newUniqueCacheName)) {
+      logMsg(WARNING, s"Cache '%s' already exists: renaming it as '%s'".
+                      format(cacheName, newUniqueCacheName))
     }
 
     val cacheConfiguration = new CacheConfiguration()
-      .name(cacheName)
+      .name(newUniqueCacheName)
       .maxElementsInMemory(maxElementsInMemory)
       .eternal(eternal)
       .timeToIdleSeconds(timeToIdle)
@@ -48,41 +50,41 @@ class StringCache {
     val cache = new Cache(cacheConfiguration)
     cacheManager.addCache(cache)
     //return the cache from the cacheManager
-    cacheManager.getCache(cacheName)
+    cacheManager.getCache(newUniqueCacheName)
   }
 
 
-  def getValue(key: String): String = {
+  def getValue(key: K): V = {
     val value = cacheArea.get(key)
-    if (value != null) value.getObjectValue.asInstanceOf[String] else null
+    if (value != null) value.getObjectValue.asInstanceOf[V] else null.asInstanceOf[V]
   }
 
 
-  def get(key: String): Option[String] = {
+  def get(key: K): Option[V] = {
     val value = getValue(key)
     if (value != null) Some(value) else None
   }
 
 
 
-  def remove(key: String) {
+  def remove(key: K) {
     cacheArea.remove(key)
   }
 
 
-  def add(kv: (String, String)) {
+  def add(kv: (K, V)) {
     cacheArea.put(new Element(kv._1, kv._2))
   }
 
 
-  def update(key: String, value: String) {
+  def update(key: K, value: V) {
     val element = cacheArea.get(key)
     if (element == null) throw new NoSuchElementException()
     cacheArea.putIfAbsent(new Element(key, value))
   }
 
 
-  def apply(key: String): String = {
+  def apply(key: K): V = {
     val element = cacheArea.get(key)
     if (element == null) throw new NoSuchElementException()
     getValue(key)

@@ -9,6 +9,7 @@ import net.liftweb.json.JsonAST.JValue
 
 import src.main.scala.logging.Logging._
 import src.main.scala.types.PostalCode
+import src.main.scala.cache.KeyValueCache
 
 /**
   * object: GeoDecodingProviderGoogleMaps
@@ -23,6 +24,8 @@ object GeoDecodingProviderGoogleMaps extends GeoDecodingProvider {
   override protected [this] val urlGeoDecodeFmt =
     "http://maps.googleapis.com/maps/api/geocode/json?language=en&latlng=%f%%2C%f&sensor=false"
 
+  override protected [this] val cacheGeoDecode =
+    new KeyValueCache[(Double, Double), PostalCode]("GeoDecoderGoogleMaps")
 
   override protected def parsePostalCodeInAnswer(answerJson: String): Try[PostalCode] = {
 
@@ -41,7 +44,7 @@ object GeoDecodingProviderGoogleMaps extends GeoDecodingProvider {
       var postalCode: String = ""
 
       val addressAttributes = (firstAddress \ "address_components").children
-      for { 
+      for {
          addressAttribute <- addressAttributes
         } {
             val attrType = (addressAttribute \ "types").extract[Array[String]]
@@ -68,7 +71,7 @@ object GeoDecodingProviderGoogleMaps extends GeoDecodingProvider {
     }
 
     /*
-     * This is an example of the JSON string that GoogleMaps GeoDecode 
+     * This is an example of the JSON string that GoogleMaps GeoDecode
      * returns (Oct 2015):
      *
      {

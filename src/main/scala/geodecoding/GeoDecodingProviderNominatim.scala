@@ -8,6 +8,7 @@ import net.liftweb.json._
 
 import src.main.scala.logging.Logging._
 import src.main.scala.types.PostalCode
+import src.main.scala.cache.KeyValueCache
 
 /**
   * object: GeoDecodingProviderNominatim
@@ -23,18 +24,18 @@ object GeoDecodingProviderNominatim extends GeoDecodingProvider {
   override protected [this] val urlGeoDecodeFmt =
     "http://nominatim.openstreetmap.org/reverse?lat=%f&lon=%f&format=json&accept-language=en&addressdetails=1"
 
+  override protected [this] val cacheGeoDecode =
+    new KeyValueCache[(Double, Double), PostalCode]("GeoDecoderNominatim")
+
   override protected [this] def parsePostalCodeInAnswer(answerJson: String): Try[PostalCode] = {
 
     try {
+      implicit val formats = net.liftweb.json.DefaultFormats
+
       val jsonTree = parse(answerJson)
       val address = jsonTree \ "address"
-      val postalCode = address \ "postcode" match {
-                           case JString(s) => s
-                           case JInt(i) => i.toString
-                         }
-      val countryCode = address \ "country_code" match {
-                           case JString(s) => s
-                         }
+      val postalCode = (address \ "postcode").extract[String]
+      val countryCode = ( address \ "country_code").extract[String]
       Success(PostalCode(countryCode, postalCode))
     } catch {
       case NonFatal(e) => {
