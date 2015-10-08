@@ -17,28 +17,54 @@ abstract class GeoDecodingProvider extends Object {
 
   protected [this] val cacheGeoDecode: KeyValueCache[(Double, Double), PostalCode]
 
-  def convertLatLongToPostalCode(Latitude: Double, Longitude: Double): Try[PostalCode] = {
+  def convertLatLongToPostalCode(latitude: Double, longitude: Double): Try[PostalCode] = {
 
-      val urlGeoDecode = urlGeoDecodeFmt.format(Latitude, Longitude)
-      try {
-        // val aCmdLineArg = cache(i.toString)
-        val src = Source.fromURL(urlGeoDecode)
-        val geoDecodeResult = src.mkString
-        parsePostalCodeInAnswer(geoDecodeResult)
-        // case (value, index) => cache.add(index.toString, value)
-      } catch {
-        case e: java.io.IOException => {
-                     logMsg(ERROR, "I/O error occurred while GeoDecoding: %s".
-                                     format(e.getMessage))
-                     Failure(e)
-          }
+    // check whether this (latitude/longitude) is already in the cache for this Geodecoder
+    val cacheKey = (latitude, longitude)
+    val cachedPostalCode: Option[PostalCode] = cacheGeoDecode.get(cacheKey)
+    cachedPostalCode match {
+      case Some(postalCode) => {
+         logMsg(DEBUG, "Geodecoding for latitude,longitude=(%f, %f) already cached".
+                          format(latitude, longitude))
+         return Success(postalCode)
       }
-  }
+      case None => {
+         logMsg(DEBUG, "Geodecoding for latitude,longitude=(%f, %f) has not been cached before".
+                          format(latitude, longitude))
+      }
+    }
+
+    // this (latitude/longitude) is not in the cache for this Geodecoder
+    val urlGeoDecode = urlGeoDecodeFmt.format(latitude, longitude)
+    try {
+      // val aCmdLineArg = cache(i.toString)
+      val src = Source.fromURL(urlGeoDecode)
+      val geoDecodeResult = src.mkString
+      val result = parsePostalCodeInAnswer(geoDecodeResult)
+      if (result.isSuccess) {
+        // The (latitude/longitude) were finally geodecoded in parsePostalCodeInAnswer
+        logMsg(DEBUG, "Caching the geodecoding for latitude,longitude=(%f, %f)".
+                         format(latitude, longitude))
+        cacheGeoDecode.add(cacheKey, result.get)  // .get returns a PostalCode
+      }
+      result
+      // case (value, index) => cache.add(index.toString, value)
+    } catch {
+      case e: java.io.IOException => {
+                   logMsg(ERROR, "I/O error occurred while GeoDecoding: %s".
+                                   format(e.getMessage))
+                   Failure(e)
+      }
+    } // end of catch
+    
+  } // end of "def convertLatLongToPostalCode"
+
 
   protected [this] def parsePostalCodeInAnswer(answerJson: String): Try[PostalCode]
 
-  def apply(Latitude: Double, Longitude: Double): Try[PostalCode] =
-    convertLatLongToPostalCode(Latitude, Longitude)
+
+  def apply(latitude: Double, longitude: Double): Try[PostalCode] =
+    convertLatLongToPostalCode(latitude, longitude)
 
 }
 

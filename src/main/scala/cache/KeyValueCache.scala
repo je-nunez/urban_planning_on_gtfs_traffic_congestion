@@ -25,7 +25,8 @@ class KeyValueCache[K, V](val cacheName: String,
     val managerName = "cacheManager"
 
     val managerConfiguration = new Configuration()
-    val cacheManager = new CacheManager(managerConfiguration)
+    val cacheManager = CacheManager.create(managerConfiguration)
+    // val cacheManager = new CacheManager(managerConfiguration)
 
     //build the cache
     val uniqueCacheName = new StringBuilder(cacheName)
@@ -40,6 +41,7 @@ class KeyValueCache[K, V](val cacheName: String,
                       format(cacheName, newUniqueCacheName))
     }
 
+    // cacheManager.setName(newUniqueCacheName + "_mgr")
     val cacheConfiguration = new CacheConfiguration()
       .name(newUniqueCacheName)
       .maxElementsInMemory(maxElementsInMemory)
@@ -54,6 +56,13 @@ class KeyValueCache[K, V](val cacheName: String,
   }
 
 
+  // A key can exist at one instant but be purged from the cache by an
+  // concurrent thread just an instant later, so use this method "keyExists()
+  // with care
+  def keyExists(key: K): Boolean =
+    cacheArea.isKeyInCache(key)
+
+
   def getValue(key: K): V = {
     val value = cacheArea.get(key)
     if (value != null) value.getObjectValue.asInstanceOf[V] else null.asInstanceOf[V]
@@ -64,7 +73,6 @@ class KeyValueCache[K, V](val cacheName: String,
     val value = getValue(key)
     if (value != null) Some(value) else None
   }
-
 
 
   def remove(key: K) {
