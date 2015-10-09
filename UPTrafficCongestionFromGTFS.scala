@@ -96,7 +96,7 @@ object urbanPlanningOnTrafficCongestion {
 
     urbanPlanningController.loadGtfsModelIntoDb(ignoreAgencyValidation)
 
-    urbanPlanningController.calculateBusiestStopSegments()
+    urbanPlanningController.calculateTripSegmentTimes()
 
   }  // end of method main(...)
 } // end of object urbanPlanningOnTrafficCongestion

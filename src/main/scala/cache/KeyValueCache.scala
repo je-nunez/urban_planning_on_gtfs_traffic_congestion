@@ -56,8 +56,8 @@ class KeyValueCache[K, V](val cacheName: String,
   }
 
 
-  // A key can exist at one instant but be purged from the cache by an
-  // concurrent thread just an instant later, so use this method "keyExists()
+  // A key can exist at one instant but be purged from the cache by a
+  // concurrent thread just an instant later, so use this method "keyExists()"
   // with care
   def keyExists(key: K): Boolean =
     cacheArea.isKeyInCache(key)

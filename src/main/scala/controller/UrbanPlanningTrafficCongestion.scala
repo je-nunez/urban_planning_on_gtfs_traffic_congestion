@@ -54,7 +54,7 @@ class UrbanPlanningTrafficCongestion(
   } // end of method loadGtfsModel()
 
 
-  // The name of this method "calculateBusiestStopSegments" is reminiscent
+  // The name of this method "calculateTripSegmentTimes" is reminiscent
   // from the New York City's Department of City Planning LION Single-Line
   // Street ___Segments___, although the LION Street Segments are __minimal__
   // segments, here the segments are between consecutive transit stops, ie.,
@@ -62,15 +62,22 @@ class UrbanPlanningTrafficCongestion(
   // perspective, but they are the ones whose delay-times and congestion can
   // be inferred from the Transit and Traffic datasources.
 
-  def calculateBusiestStopSegments() {
+  def calculateTripSegmentTimes() {
 
-    // create a new index on the "stop_times" SQL table, since it will help us
-    // to speed up the calculation of the delay between successive stops in a
-    // same trip (the successive stops in a same tripId are those with
+    // create the "segment_times" SQL table
+    val createSegmentTimesTable = DBIO.seq(
+       dstGtfsDb.tripSegmentTimes.schema.create
+    )
+    Await.ready(dstGtfsDb.db.run(createSegmentTimesTable), Duration.Inf)
+
+    // create a new index on the GTFS "stop_times" SQL table, since it will help
+    // us to speed up the calculation of the delay between successive stops
+    // in a same trip (the successive stops in a same tripId are those with
     // consecutive values of stopSequenceNumb)
 
     val newIdxStopTimes =
-      sqlu"""CREATE UNIQUE INDEX idx_trip_stopseqnumb ON stop_times (tripId, stopSequenceNumb)"""
+      sqlu"""CREATE UNIQUE INDEX idx_trip_stopseqnumb
+                    ON stop_times (tripId, stopSequenceNumb)"""
 
     Await.ready(dstGtfsDb.db.run(newIdxStopTimes), Duration.Inf)
 
@@ -86,37 +93,41 @@ class UrbanPlanningTrafficCongestion(
     val analyzeHistogramIdx = sqlu"""ANALYZE idx_trip_stopseqnumb"""
     Await.ready(dstGtfsDb.db.run(analyzeHistogramIdx), Duration.Inf)
 
-    // calculate the delay between successive stops in a same trip, for all
-    // the trips (the index created in the instruction before speeds up this
-    // calculation)
-    val updateTripDelayTimes =
-      sqlu"""UPDATE stop_times SET delayTime = arrivalTime - IFNULL((select t2.departureTime from stop_times t2 where t2.tripId = stop_times.tripId  and stop_times.stopSequenceNumb = t2.stopSequenceNumb + 1), arrivalTime+1)"""
+    // calculate into the new table "segment_times", the delay between
+    // successive stops in a same trip, for all the trips (the index created
+    // in the instruction before speeds up this calculation)
 
-    Await.ready(dstGtfsDb.db.run(updateTripDelayTimes), Duration.Inf)
+    val insertTripSegmentDelays =
+      sqlu"""INSERT INTO segment_times
+                SELECT t1.tripId, t1.stopId, t2.stopId, t1.stopSequenceNumb,
+                       t1.departureTime, t2.arrivalTime,
+                       t2.arrivalTime - t1.departureTime
+                FROM stop_times t1 INNER JOIN stop_times t2
+                     ON t1.tripId = t2.tripId AND
+                        t1.stopSequenceNumb = t2.stopSequenceNumb - 1"""
 
-/* 
-    Newer SQL tables not proper to GTFS per-se, but better for analyzing
-    Urban Planning based on Traffic Congestion (so the SQL "UPDATE stop_times
-    ..." DML will not be used, but new SQL tables will have this analysis:
-
-        CREATE TABLE segment_speeds("tripId" VARCHAR(254) NOT NULL, "stopIdDeparture" VARCHAR(254) NOT NULL, "stopIdArrival" VARCHAR(254) NOT NULL, "departStopSequenceNumb" INTEGER NOT NULL, "departureTime" INTEGER NOT NULL, "arrivalTime" INTEGER NOT NULL,  "delayTime" INTEGER DEFAULT -1 NOT NULL, constraint "fk_times_trips" foreign key("tripId") references "trips"("tripId") on update CASCADE on delete CASCADE);
-ELECT "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime) as min_trip, AVG(delayTime), MAX(delayTime) as max_trip FROM segment_speeds GROUP BY "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" H, 
-
-        INSERT INTO segment_speeds SELECT t1.tripId, t1.stopId, t2.stopId, t1.stopSequenceNumb, t1.departureTime, t2.arrivalTime, t2.arrivalTime - t1.departureTime from stop_times t1 inner join stop_times t2 on t1.tripId = t2.tripId and t1.stopSequenceNumb = t2.stopSequenceNumb - 1;
-
-        SELECT "tripId", "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime), AVG(delayTime), MAX(delayTime) FROM segment_speeds GROUP BY "tripId", "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" HAVING trip_numbers > 10;
-
-        SELECT "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime), AVG(delayTime), MAX(delayTime) FROM segment_speeds GROUP BY "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" HAVING trip_numbers > 10;
-
-        SELECT "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime) as min_trip, AVG(delayTime), MAX(delayTime) as max_trip FROM segment_speeds GROUP BY "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" HAVING trip_numbers > 10 and max_trip - min_trip > 20;
-
-        SELECT * FROM segment_speeds WHERE stopIdDeparture = 10009 and stopIdArrival = 10299 and departStopSequenceNumb = 27 ;
-
-        SELECT tripId, stopIdDeparture, departureTime / 3600 as hour, delayTime FROM segment_speeds WHERE stopIdDeparture = 10009 and stopIdArrival = 10299 and departStopSequenceNumb = 27  ORDER BY hour ;
-
-*/
+    Await.ready(dstGtfsDb.db.run(insertTripSegmentDelays), Duration.Inf)
 
   }
+
+/*
+   Other queries on the new, non-GTFS table "segment_times":
+
+        SELECT "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime) as min_trip, AVG(delayTime), MAX(delayTime) as max_trip FROM segment_times GROUP BY "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" H,
+
+        INSERT INTO segment_times SELECT t1.tripId, t1.stopId, t2.stopId, t1.stopSequenceNumb, t1.departureTime, t2.arrivalTime, t2.arrivalTime - t1.departureTime from stop_times t1 inner join stop_times t2 on t1.tripId = t2.tripId and t1.stopSequenceNumb = t2.stopSequenceNumb - 1;
+
+        SELECT "tripId", "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime), AVG(delayTime), MAX(delayTime) FROM segment_times GROUP BY "tripId", "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" HAVING trip_numbers > 10;
+
+        SELECT "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime), AVG(delayTime), MAX(delayTime) FROM segment_times GROUP BY "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" HAVING trip_numbers > 10;
+
+        SELECT "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime) as min_trip, AVG(delayTime), MAX(delayTime) as max_trip FROM segment_times GROUP BY "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" HAVING trip_numbers > 10 and max_trip - min_trip > 20;
+
+        SELECT * FROM segment_times WHERE stopIdDeparture = 10009 and stopIdArrival = 10299 and departStopSequenceNumb = 27 ;
+
+        SELECT tripId, stopIdDeparture, departureTime / 3600 as hour, delayTime FROM segment_times WHERE stopIdDeparture = 10009 and stopIdArrival = 10299 and departStopSequenceNumb = 27  ORDER BY hour ;
+
+*/
 
 } // end of class UrbanPlanningTrafficCongestion
 

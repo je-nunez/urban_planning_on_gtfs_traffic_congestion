@@ -136,14 +136,10 @@ class ConvertBusStopTimesCsvToDbTable(
     val stopId = lineValues(fieldsToCols("stop_id"))
     val pickupType = lineValues(fieldsToCols("pickup_type"))
     val dropOffType = lineValues(fieldsToCols("drop_off_type"))
-    val delayTime = -1    // the delay to get from this stop from the previous
-                          // stop in this same trip is still unknown (could
-                          // have been NULL instead of -1)
 
     logMsg(DEBUG, s"Valid bus stop time: $tripId, $stopId at $timeArrival")
     return DbSchemaStopTime(tripId, timeArrival, timeDeparture, stopId,
-                            intStopSequence, pickupType, dropOffType,
-                            delayTime)
+                            intStopSequence, pickupType, dropOffType)
 
   } // method parseAndValidateCsvLine
 

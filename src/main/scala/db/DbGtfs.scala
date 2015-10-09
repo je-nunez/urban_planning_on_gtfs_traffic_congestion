@@ -37,6 +37,9 @@ class DbGtfs(val destinationDir: String) {
 
   lazy val busStopTimes = TableQuery[DbGtfsTableStopTimes]
 
+  lazy val tripSegmentTimes = TableQuery[DbGtfsTableSegmentTime]
+
+
   // instance constructor: it creates the SQL DB and all its table schemas
   {
     createTables(Config.gtfsDbFilename)
@@ -165,7 +168,6 @@ class DbGtfs(val destinationDir: String) {
       def stopSequenceNumb = column[Int]("stopSequenceNumb")
       def pickupType = column[String]("pickupType")
       def dropOffType = column[String]("dropOffType")
-      def delayTime = column[Int]("delayTime", O.Default(-1))
 
       def fkTrips = foreignKey("fk_times_trips",
                                 tripId, busTrips)(_.tripId,
@@ -179,10 +181,47 @@ class DbGtfs(val destinationDir: String) {
       def * = (tripId, arrivalTime,
                departureTime, stopId,
                stopSequenceNumb,
-               pickupType, dropOffType,
-               delayTime) <> (
+               pickupType,
+               dropOffType) <> (
                                DbSchemaStopTime.tupled,
                                DbSchemaStopTime.unapply
+                             )
+    }
+
+
+  /* A SQL table, "segment_times", derived from the GTFS "stop_times.txt" table */
+
+  class DbGtfsTableSegmentTime(tag: Tag) extends
+    Table[DbSchemaSegmentTime](tag, "segment_times") {
+
+      def tripId = column[String]("tripId")
+      def stopIdDeparture = column[String]("stopIdDeparture")
+      def stopIdArrival = column[String]("stopIdArrival")
+      def departStopSequenceNumb = column[Int]("departStopSequenceNumb")
+      def departureTime = column[Int]("departureTime")
+      def arrivalTime = column[Int]("arrivalTime")
+      def delayTime = column[Int]("delayTime", O.Default(-1))
+
+      def fkTrips = foreignKey("fk_segments_trips",
+                                tripId, busTrips)(_.tripId,
+                                        onUpdate = ForeignKeyAction.Cascade,
+                                        onDelete = ForeignKeyAction.Cascade)
+      def fkDepartStops = foreignKey("fk_segments_depart_stops",
+                                stopIdDeparture, busStops)(_.stopId,
+                                        onUpdate = ForeignKeyAction.Cascade,
+                                        onDelete = ForeignKeyAction.Cascade)
+      def fkArrivalStops = foreignKey("fk_segments_arrival_stops",
+                                stopIdArrival, busStops)(_.stopId,
+                                        onUpdate = ForeignKeyAction.Cascade,
+                                        onDelete = ForeignKeyAction.Cascade)
+
+      def * = (tripId, stopIdDeparture,
+               stopIdArrival,
+               departStopSequenceNumb,
+               departureTime, arrivalTime,
+               delayTime) <> (
+                               DbSchemaSegmentTime.tupled,
+                               DbSchemaSegmentTime.unapply
                              )
     }
 
