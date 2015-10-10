@@ -167,7 +167,24 @@ class UrbanPlanningTrafficCongestion(
                 Double)]
 
     println("Running query...")
-    dstGtfsDb.db.run(sqlSegmentsWithHighestStdDeviation) foreach println
+
+    Await.result(dstGtfsDb.db.run(sqlSegmentsWithHighestStdDeviation),
+                 Duration.Inf).
+      foreach {
+        case (stopIdDeparture, stopIdArrival, departStopSequenceNumb,
+              trip_numbers, min_delay, avg_delay,
+              max_delay) => {
+
+                  println("Traffic segments with highest std-devation in " +
+                          s"travel delay: from stop $stopIdDeparture to " +
+                          s"stop $stopIdArrival " +
+                          s"in stop-number $departStopSequenceNumb: " +
+                          s"number of trips: $trip_numbers " +
+                          s"min-trip-delay (seconds): $min_delay " +
+                          s"avg-trip-delay (seconds): $avg_delay " +
+                          s"max-trip-delay (seconds): $max_delay")
+          }
+      }
   }
 
 /*
