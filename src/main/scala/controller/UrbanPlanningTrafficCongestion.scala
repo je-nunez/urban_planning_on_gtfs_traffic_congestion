@@ -110,16 +110,68 @@ class UrbanPlanningTrafficCongestion(
 
   }
 
+
+  // Find the segments of GTFS traffic which present the highest
+  // standard-deviation of the delay during the day, ie., those segments that
+  // at some hours of the day the public buses travel fast through them, but
+  // at other hours of the day the buses travel slow.
+  //
+  // What is slow is travelling though these segments, not the stops of the
+  // buses at the extremes delimiting these segments.
+  //
+  // These segments with the highest standard-deviation of travel delay are
+  // significant to Urgan Planning for these cases:
+  //
+  // A. These segments of the street suffer traffic congestion, so it is a
+  //    not-optimum network-traffic planning (see Robert Cervero's 5-Ds of
+  //    'Transit-Oriented Urban Development'); or
+  //
+  // B. These segments of the street suffer from peatonal congestion, so they
+  //    are possibly Jane Jacobs' segments with high combination of diversity
+  //    and mixture of ingredients which may influence positively or
+  //    negatively in the vibrancy of urban life.
+  //
+  // In either case, we have to analyze with other measures not from GTFS
+  // public-transit traffic (buses as probes inside the normal vehicular
+  // traffic)
+
+  def findTrafficSegmentsWithHighestStdDeviation() {
+
+      // We need to convert yet this SQL SELECT with a GROUP BY into a
+      // higher-level Scala Slick functional-relational mapping:
+      //
+      //    http://slick.typesafe.com/doc/3.0.0/queries.html#aggregation
+      //
+      // although note on SQL's "GROUP BY":
+      //
+      //    http://slick.typesafe.com/doc/3.0.0/sql-to-slick.html#main-obstacle-semantic-api-differences
+
+      val sqlSegmentsWithHighestStdDeviation =
+        sql"""
+          SELECT
+                 stopIdDeparture, stopIdArrival, departStopSequenceNumb,
+                 COUNT(*) as trip_numbers,
+                 MIN(delayTime) as min_delay,
+                 AVG(delayTime) as avg_delay,
+                 MAX(delayTime) as max_delay
+          FROM
+                 segment_times
+          GROUP BY
+                 stopIdDeparture, stopIdArrival, departStopSequenceNumb
+          HAVING
+                 trip_numbers > 10 and max_delay - min_delay > 20
+        """.as[(String, String, Int,
+                Int,
+                Double,
+                Double,
+                Double)]
+
+    println("Running query...")
+    dstGtfsDb.db.run(sqlSegmentsWithHighestStdDeviation) foreach println
+  }
+
 /*
    Other queries on the new, non-GTFS table "segment_times":
-
-        SELECT "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime) as min_trip, AVG(delayTime), MAX(delayTime) as max_trip FROM segment_times GROUP BY "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" H,
-
-        INSERT INTO segment_times SELECT t1.tripId, t1.stopId, t2.stopId, t1.stopSequenceNumb, t1.departureTime, t2.arrivalTime, t2.arrivalTime - t1.departureTime from stop_times t1 inner join stop_times t2 on t1.tripId = t2.tripId and t1.stopSequenceNumb = t2.stopSequenceNumb - 1;
-
-        SELECT "tripId", "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime), AVG(delayTime), MAX(delayTime) FROM segment_times GROUP BY "tripId", "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" HAVING trip_numbers > 10;
-
-        SELECT "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime), AVG(delayTime), MAX(delayTime) FROM segment_times GROUP BY "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" HAVING trip_numbers > 10;
 
         SELECT "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb", COUNT(*) as trip_numbers, MIN(delayTime) as min_trip, AVG(delayTime), MAX(delayTime) as max_trip FROM segment_times GROUP BY "stopIdDeparture", "stopIdArrival", "departStopSequenceNumb" HAVING trip_numbers > 10 and max_trip - min_trip > 20;
 

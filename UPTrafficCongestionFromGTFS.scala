@@ -98,6 +98,8 @@ object urbanPlanningOnTrafficCongestion {
 
     urbanPlanningController.calculateTripSegmentTimes()
 
+    urbanPlanningController.findTrafficSegmentsWithHighestStdDeviation()
+
   }  // end of method main(...)
 } // end of object urbanPlanningOnTrafficCongestion
 
