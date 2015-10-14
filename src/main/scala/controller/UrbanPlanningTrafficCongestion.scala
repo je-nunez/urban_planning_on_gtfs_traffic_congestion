@@ -146,21 +146,38 @@ class UrbanPlanningTrafficCongestion(
       //
       //    http://slick.typesafe.com/doc/3.0.0/sql-to-slick.html#main-obstacle-semantic-api-differences
 
+      // In this query with the two INNER JOIN to the "stops" table as "s1"
+      // and "s2" (below), we can also ask for the "stopLatitude" and the
+      // "stopLongitude" fields of each stop, so that the query gives
+      // directly the geographical coordinates of the stops-extremes of the
+      // congested segment.
       val sqlSegmentsWithHighestStdDeviation =
         sql"""
           SELECT
-                 stopIdDeparture, stopIdArrival, departStopSequenceNumb,
+                 segment_times.stopIdDeparture,
+                 s1.stopName,
+                 segment_times.stopIdArrival,
+                 s2.stopName,
+                 departStopSequenceNumb,
                  COUNT(*) as trip_numbers,
                  MIN(delayTime) as min_delay,
                  AVG(delayTime) as avg_delay,
                  MAX(delayTime) as max_delay
           FROM
                  segment_times
+          INNER JOIN
+                 stops s1 ON segment_times.stopIdDeparture = s1.stopId
+          INNER JOIN
+                 stops s2 ON segment_times.stopIdArrival = s2.stopId
           GROUP BY
                  stopIdDeparture, stopIdArrival, departStopSequenceNumb
           HAVING
                  trip_numbers > 10 and max_delay - min_delay > 20
-        """.as[(String, String, Int,
+          ORDER BY
+                 trip_numbers, ( max_delay - min_delay )
+        """.as[(String, String,
+                String, String,
+                Int,
                 Int,
                 Double,
                 Double,
@@ -171,13 +188,16 @@ class UrbanPlanningTrafficCongestion(
     Await.result(dstGtfsDb.db.run(sqlSegmentsWithHighestStdDeviation),
                  Duration.Inf).
       foreach {
-        case (stopIdDeparture, stopIdArrival, departStopSequenceNumb,
+        case (stopIdDeparture, departureName,
+              stopIdArrival, arrivalName,
+              departStopSequenceNumb,
               trip_numbers, min_delay, avg_delay,
               max_delay) => {
 
                   println("Traffic segments with highest std-devation in " +
-                          s"travel delay: from stop $stopIdDeparture to " +
-                          s"stop $stopIdArrival " +
+                          "travel delay: from stop " +
+                          s"$stopIdDeparture ($departureName) to stop " +
+                          s"$stopIdArrival ($arrivalName) " +
                           s"in stop-number $departStopSequenceNumb: " +
                           s"number of trips: $trip_numbers " +
                           s"min-trip-delay (seconds): $min_delay " +
