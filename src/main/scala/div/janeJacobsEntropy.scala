@@ -7,9 +7,9 @@ package src.main.scala.div
 //
 // also in this directory.
 
-abstract class JaneJacobsEnthropy {
+abstract class JaneJacobsEntropy {
 
-  def enthropyAvailable(latitude: Double, longitude: Double): List[Any]
+  def entropyAvailable(latitude: Double, longitude: Double): List[Any]
 
 }
 
